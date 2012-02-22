@@ -43,8 +43,8 @@ bearbeite :: Handle -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO ()
 bearbeite handle sites = do
 	httpRequest <- readRequest handle
 	putStrLn $ "Serving File: " ++ httpReqFile httpRequest
-        let site = sites Map.!  httpReqFile httpRequest
-        httpResponse <- catch (createResponse httpRequest site) (\e -> createErrorResponse 404)
+        let site = Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) sites
+        httpResponse <- createResponse httpRequest site
         sendResponse handle httpResponse
 
 sendResponse :: Handle -> HTTPResponse -> IO ()
@@ -54,9 +54,6 @@ sendResponse h res = do
     hPutStr h $ httpResBody res
     hFlush h
     hClose h
-
---data UselessSite = Site { uri :: String
---                            , function :: HTTPRequest -> IO HTTPResponse }
 
 createStatusLine :: Integer -> String
 createStatusLine n = "HTTP/1.0 "++ (createStatusLine' n) ++"\n\r"
@@ -71,8 +68,8 @@ createStatusLine' 501 = "501 NOT IMPLEMENTED"
 createStatusLine' _ = "418 I'M A TEAPOT"
 
 
-createErrorResponse :: Integer -> IO HTTPResponse
-createErrorResponse n = do
+createErrorResponse :: Integer -> HTTPRequest -> IO HTTPResponse
+createErrorResponse n _ = do
     putStrLn $ "Error: " ++ show n
     return HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n}
 
