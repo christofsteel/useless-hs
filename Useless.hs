@@ -7,6 +7,7 @@ httpResBody,
 httpReqFile,
 initUseless,
 register,
+createErrorResponse,
 startServer
 ) where
 
@@ -41,9 +42,12 @@ mainloop socket sites = do
 
 bearbeite :: Handle -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO ()
 bearbeite handle sites = do
-	httpRequest <- readRequest handle
-	putStrLn $ "Serving File: " ++ httpReqFile httpRequest
-        let site = Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) sites
+	eitherHttpRequest <- readRequest handle
+	(site, httpRequest) <- case eitherHttpRequest of
+	 Left i -> return (createErrorResponse i, HTTPRequest {httpReqMethod = "", httpReqVersion = "", httpReqFile = "", httpReqQueries = [], httpReqHeader = []})
+	 Right httpRequest -> do
+	  putStrLn $ "Serving File: " ++ httpReqFile httpRequest
+          return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) sites, httpRequest)
         httpResponse <- createResponse httpRequest site
         sendResponse handle httpResponse
 
@@ -88,17 +92,18 @@ data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
 					, httpResBody :: String
 					}
 
-statushtml n = "<!DOCTYPE html><html><head><title>"++ (createStatusLine' n) ++"</title></head><body><img alt=\"" ++ (createStatusLine' n)++ "\" src=\"http://httpcats.herokuapp.com/" ++ (show n) ++ "\"/></body></html>"
+statushtml n = "<!DOCTYPE html>\n\r<html>\n\r\t<head>\n\r\t\t<title>"++ (createStatusLine' n) ++"</title>\n\r\t</head>\n\r\t<body>\n\r\t\t<img alt=\"" ++ (createStatusLine' n)++ "\" src=\"http://httpcats.herokuapp.com/" ++ (show n) ++ "\"/>\n\r\t</body>\n\r</html>"
 
-readRequest :: Handle -> IO HTTPRequest
+readRequest :: Handle -> IO (Either Integer HTTPRequest)
 readRequest handle = do
 	requestline <- hGetLine handle
         header <- getHeader handle
 	return $ mkRequest header $ words requestline
 
-mkRequest :: [(String,String)] -> [String] -> HTTPRequest
-mkRequest h (m:f:v:xs) = HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = v, httpReqHeader = h, httpReqQueries=[]}
-mkRequest h xs = HTTPRequest {httpReqMethod = "FAIL", httpReqFile=[], httpReqVersion=[], httpReqHeader=[], httpReqQueries=[]}
+mkRequest :: [(String,String)] -> [String] -> Either Integer HTTPRequest
+mkRequest h (m:f:v:xs) = Right $ HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = v, httpReqHeader = h, httpReqQueries=[]}
+mkRequest h xs = Left 400
+--HTTPRequest {httpReqMethod = "FAIL", httpReqFile=[], httpReqVersion=[], httpReqHeader=[], httpReqQueries=[]}
 
 getHeader :: Handle -> IO [(String, String)]
 getHeader h = do
