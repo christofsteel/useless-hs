@@ -1,0 +1,22 @@
+Name: Useless
+Version: 0.1.0
+Cabal-version: >= 1.6
+License: OtherLicense
+License-File: LICENSE
+Author: Christoph "Hammy" Stahl
+Maintainer: christoph.stahl@uni-dortmund.de
+Stability: alpha
+Category: Network
+Synopsis: A Web/Applicationserver for Haskell Applications
+Build-type: Simple
+description: Useless lets you create and run Webapplications written in Haskell
+
+source-repository head
+    type: git
+    location: https://github.com/christofsteel/useless-hs.git
+
+
+Library
+    Build-Depends: base, network, process, filepath, containers, directory, haskell98
+    Exposed-modules: Useless
+
