@@ -1,0 +1,31 @@
+Useless
+=======
+
+Useless is a Haskell Application Server. 
+It allows you to build, run and manage Applications that are written in Haskell.
+It currently only delivers HTTP/1.0 sites and is not quite standard compliance to HTTP, but current Webclients should be able to process responses from Useless applications.
+
+---
+
+To compile and install Useless use:
+
+$ cabal install
+
+---
+
+To build a Webapplication, just import Useless.
+Example:
+
+import Useless
+
+main = do
+  theServer <- initUseless
+  theServer <- register "/" (foobar "A String") theServer
+  startServer 8080 theServer
+
+foobar :: String -> HTTPRequest -> IO HTTPResponse
+foobar s req = return HTTPResponse 
+  { httpResStatus = 200
+  , httpResHeader = []
+  , httpResBody = "<!DOCTYPE html><html><head><title>"++ s ++"</title></head><body>You are using "++httpReqVersion req++", but I'm ignoring that, sorry :(</body></html>"
+  }
