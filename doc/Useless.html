@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+><head
+  ><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"
+     /><title
+    >Useless</title
+    ><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean"
+     /><script src="haddock-util.js" type="text/javascript"
+    ></script
+    ><script type="text/javascript"
+    >//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Useless.html");};
+//]]>
+</script
+    ></head
+  ><body
+  ><div id="package-header"
+    ><ul class="links" id="page-menu"
+      ><li
+	><a href="index.html"
+	  >Contents</a
+	  ></li
+	><li
+	><a href="doc-index.html"
+	  >Index</a
+	  ></li
+	></ul
+      ><p class="caption" class="empty"
+      >&nbsp;</p
+      ></div
+    ><div id="content"
+    ><div id="module-header"
+      ><p class="caption"
+	>Useless</p
+	></div
+      ><div id="description"
+      ><p class="caption"
+	>Description</p
+	><div class="doc"
+	><p
+	  >Useless is a Module for building Webapplications
+</p
+	  ></div
+	></div
+      ><div id="synopsis"
+      ><p id="control.syn" class="caption expander" onclick="toggleSection('syn')"
+	>Synopsis</p
+	><ul id="section.syn" class="hide" onclick="toggleSection('syn')"
+	><li class="src short"
+	  ><span class="keyword"
+	    >data</span
+	    >  <a href="#t:HTTPRequest"
+	    >HTTPRequest</a
+	    >  = <a href="#v:HTTPRequest"
+	    >HTTPRequest</a
+	    > {<ul class="subs"
+	    ><li
+	      ><a href="#v:httpReqMethod"
+		>httpReqMethod</a
+		> :: String</li
+	      ><li
+	      ><a href="#v:httpReqVersion"
+		>httpReqVersion</a
+		> :: String</li
+	      ><li
+	      ><a href="#v:httpReqFile"
+		>httpReqFile</a
+		> :: String</li
+	      ><li
+	      ><a href="#v:httpReqQueries"
+		>httpReqQueries</a
+		> :: [(String, String)]</li
+	      ><li
+	      ><a href="#v:httpReqHeader"
+		>httpReqHeader</a
+		> :: [(String, String)]</li
+	      ></ul
+	    >}</li
+	  ><li class="src short"
+	  ><span class="keyword"
+	    >data</span
+	    >  <a href="#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >  = <a href="#v:HTTPResponse"
+	    >HTTPResponse</a
+	    > {<ul class="subs"
+	    ><li
+	      ><a href="#v:httpResStatus"
+		>httpResStatus</a
+		> :: Integer</li
+	      ><li
+	      ><a href="#v:httpResHeader"
+		>httpResHeader</a
+		> :: [(String, String)]</li
+	      ><li
+	      ><a href="#v:httpResBody"
+		>httpResBody</a
+		> :: String</li
+	      ></ul
+	    >}</li
+	  ><li class="src short"
+	  ><a href="#v:initUseless"
+	    >initUseless</a
+	    > :: IO (Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >))</li
+	  ><li class="src short"
+	  ><a href="#v:register"
+	    >register</a
+	    > :: String -&gt; (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >) -&gt; Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >) -&gt; IO (Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >))</li
+	  ><li class="src short"
+	  ><a href="#v:createErrorResponse"
+	    >createErrorResponse</a
+	    > :: Integer -&gt; <a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    ></li
+	  ><li class="src short"
+	  ><a href="#v:startServer"
+	    >startServer</a
+	    > :: Integer -&gt; Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >) -&gt; IO ()</li
+	  ></ul
+	></div
+      ><div id="interface"
+      ><h1
+	>Documentation</h1
+	><div class="top"
+	><p class="src"
+	  ><span class="keyword"
+	    >data</span
+	    >  <a name="t:HTTPRequest" class="def"
+	    >HTTPRequest</a
+	    >  </p
+	  ><div class="doc"
+	  ><p
+	    >The HTTP Request
+</p
+	    ></div
+	  ><div class="subs constructors"
+	  ><p class="caption"
+	    >Constructors</p
+	    ><table
+	    ><tr
+	      ><td class="src"
+		><a name="v:HTTPRequest" class="def"
+		  >HTTPRequest</a
+		  ></td
+		><td class="doc empty"
+		>&nbsp;</td
+		></tr
+	      ><tr
+	      ><td colspan="2"
+		><div class="subs fields"
+		  ><p class="caption"
+		    >Fields</p
+		    ><dl
+		    ><dt class="src"
+		      ><a name="v:httpReqMethod" class="def"
+			>httpReqMethod</a
+			> :: String</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ><dt class="src"
+		      ><a name="v:httpReqVersion" class="def"
+			>httpReqVersion</a
+			> :: String</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ><dt class="src"
+		      ><a name="v:httpReqFile" class="def"
+			>httpReqFile</a
+			> :: String</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ><dt class="src"
+		      ><a name="v:httpReqQueries" class="def"
+			>httpReqQueries</a
+			> :: [(String, String)]</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ><dt class="src"
+		      ><a name="v:httpReqHeader" class="def"
+			>httpReqHeader</a
+			> :: [(String, String)]</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ></dl
+		    ><div class="clear"
+		    ></div
+		    ></div
+		  ></td
+		></tr
+	      ></table
+	    ></div
+	  ></div
+	><div class="top"
+	><p class="src"
+	  ><span class="keyword"
+	    >data</span
+	    >  <a name="t:HTTPResponse" class="def"
+	    >HTTPResponse</a
+	    >  </p
+	  ><div class="doc"
+	  ><p
+	    >The HTTP Response
+</p
+	    ></div
+	  ><div class="subs constructors"
+	  ><p class="caption"
+	    >Constructors</p
+	    ><table
+	    ><tr
+	      ><td class="src"
+		><a name="v:HTTPResponse" class="def"
+		  >HTTPResponse</a
+		  ></td
+		><td class="doc empty"
+		>&nbsp;</td
+		></tr
+	      ><tr
+	      ><td colspan="2"
+		><div class="subs fields"
+		  ><p class="caption"
+		    >Fields</p
+		    ><dl
+		    ><dt class="src"
+		      ><a name="v:httpResStatus" class="def"
+			>httpResStatus</a
+			> :: Integer</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ><dt class="src"
+		      ><a name="v:httpResHeader" class="def"
+			>httpResHeader</a
+			> :: [(String, String)]</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ><dt class="src"
+		      ><a name="v:httpResBody" class="def"
+			>httpResBody</a
+			> :: String</dt
+		      ><dd class="doc empty"
+		      >&nbsp;</dd
+		      ></dl
+		    ><div class="clear"
+		    ></div
+		    ></div
+		  ></td
+		></tr
+	      ></table
+	    ></div
+	  ></div
+	><div class="top"
+	><p class="src"
+	  ><a name="v:initUseless" class="def"
+	    >initUseless</a
+	    > :: IO (Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >))</p
+	  ><div class="doc"
+	  ><p
+	    >initUseless initializes a Useless server layout.
+</p
+	    ></div
+	  ></div
+	><div class="top"
+	><p class="src"
+	  ><a name="v:register" class="def"
+	    >register</a
+	    > :: String -&gt; (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >) -&gt; Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >) -&gt; IO (Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >))</p
+	  ><div class="doc"
+	  ><p
+	    ><code
+	      ><a href="Useless.html#v:register"
+		>register</a
+		></code
+	      > adds resources to your a server layout, and returns a new server layout.
+</p
+	    ><p
+	    >The given function is called, when the resource is requested. It gets a <code
+	      ><a href="Useless.html#t:HTTPRequest"
+		>HTTPRequest</a
+		></code
+	      > and has to respond with a <code
+	      ><a href="Useless.html#t:HTTPResponse"
+		>HTTPResponse</a
+		></code
+	      >
+</p
+	    ><p
+	    >e.g:
+</p
+	    ><pre
+	    >  server = do 
+  	layout &lt;- initUseless
+  	layout &lt;- register &quot;/test&quot; someFunction layout 
+</pre
+	    ></div
+	  ></div
+	><div class="top"
+	><p class="src"
+	  ><a name="v:createErrorResponse" class="def"
+	    >createErrorResponse</a
+	    > :: Integer -&gt; <a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    ></p
+	  ><div class="doc"
+	  ><p
+	    ><code
+	      ><a href="Useless.html#v:createErrorResponse"
+		>createErrorResponse</a
+		></code
+	      > returns a function, that gets a <code
+	      ><a href="Useless.html#t:HTTPRequest"
+		>HTTPRequest</a
+		></code
+	      > and answers with a <code
+	      ><a href="Useless.html#t:HTTPResponse"
+		>HTTPResponse</a
+		></code
+	      >, for a given HTTP Status code
+</p
+	    ><p
+	    >e.g:
+</p
+	    ><pre
+	    >  	layout &lt;- register &quot;/forbidden&quot; (createErrorResponse 403) layout 
+</pre
+	    ></div
+	  ></div
+	><div class="top"
+	><p class="src"
+	  ><a name="v:startServer" class="def"
+	    >startServer</a
+	    > :: Integer -&gt; Map String (<a href="Useless.html#t:HTTPRequest"
+	    >HTTPRequest</a
+	    > -&gt; IO <a href="Useless.html#t:HTTPResponse"
+	    >HTTPResponse</a
+	    >) -&gt; IO ()</p
+	  ><div class="doc"
+	  ><p
+	    >startServer starts the server at a specific Port
+</p
+	    ></div
+	  ></div
+	></div
+      ></div
+    ><div id="footer"
+    ><p
+      >Produced by <a href="http://www.haskell.org/haddock/"
+	>Haddock</a
+	> version 2.9.2</p
+      ></div
+    ></body
+  ></html
+>

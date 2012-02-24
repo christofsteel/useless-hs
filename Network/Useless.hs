@@ -1,4 +1,5 @@
-module Useless (
+-- | Useless is a Module for building Webapplications
+module Network.Useless (
 HTTPRequest (HTTPRequest, httpReqMethod, httpReqVersion, httpReqFile, httpReqHeader, httpReqQueries),
 HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody),
 initUseless,
@@ -24,12 +25,16 @@ initUseless :: IO (Map.Map String (HTTPRequest -> IO HTTPResponse))
 initUseless = return Map.empty
 
 {- |
-register adds resources to your a server layout, and returns a new server layout.
-The given Function is called, when the resource is requested. It gets a HTTPRequest and has to respond with a HTTPResponse
+'register' adds resources to your a server layout, and returns a new server layout.
+
+The given function is called, when the resource is requested. It gets a 'HTTPRequest' and has to respond with a 'HTTPResponse'
+
 e.g:
-  server = do 
-  	layout <- initUseless
-  	layout <- register "/test" someFunction layout -}
+
+>  server = do 
+>  	layout <- initUseless
+>  	layout <- register "/test" someFunction layout 
+-}
 register :: String -> (HTTPRequest -> IO HTTPResponse) -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO (Map.Map String (HTTPRequest -> IO HTTPResponse))
 register site f sites = return $ Map.insert site f sites
 
@@ -79,9 +84,12 @@ createStatusLine' 501 = "501 NOT IMPLEMENTED"
 createStatusLine' _ = "418 I'M A TEAPOT"
 
 {- |
-'createErrorResponse' errorno returns a Function, that gets a HTTPRequest and answers with a HTTPResponse, fitting the errorno
+'createErrorResponse' returns a function, that gets a 'HTTPRequest' and answers with a 'HTTPResponse', for a given HTTP Status code
+
 e.g:
-  	layout <- register "/forbidden" (createErrorResponse 403) layout -}
+
+>  	layout <- register "/forbidden" (createErrorResponse 403) layout 
+-}
 createErrorResponse :: Integer -> HTTPRequest -> IO HTTPResponse
 createErrorResponse n _ = do
     putStrLn $ "Error: " ++ show n
@@ -90,17 +98,7 @@ createErrorResponse n _ = do
 createResponse :: HTTPRequest -> (HTTPRequest -> IO HTTPResponse)  -> IO HTTPResponse 
 createResponse request f =  f request
 
-{- |
-A HTTPRequest consits of: 
-	* the Method (httpReqMethod)
-		e.g: GET, POST etc
-	* the HTTP version (httpReqVersion)
-		e.g: HTTP/1.1, HTTP/1.0
-	* the HTTP URI (httpReqFile) !Currently including all queries!
-		e.g: "/test?q=Test+Thing", "/", "/index.html"
-	* the Queries (httpReqQueries) !Currently unsupported!
-	* the HTTP headers (httpReqHeader)
-		e.g: [("host:", "localhost"), ("Foo:", "Bar,Baz")] -}
+-- | The HTTP Request
 data HTTPRequest = HTTPRequest  { httpReqMethod 	:: String
 				, httpReqVersion 	:: String
 				, httpReqFile		:: String
@@ -108,13 +106,7 @@ data HTTPRequest = HTTPRequest  { httpReqMethod 	:: String
 				, httpReqHeader	:: [(String,String)]
 				}
 
-{- | A HTTPResponse consits of
-  	the Statuscode (httpResStatus)
- 		e.g: 404, 403, 418, 200, 501
- 	the HTTP headers (httpResHeader)
- 		e.g: [("Location:", "http:/localhost/"), ("Content-Type:", "text/html")]
- 	the HTTP Body (httpResBody)
- 		e.g: "<!DOCTYPE html><html><body>Hello World</body></html>" -}
+-- | The HTTP Response
 data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
 					, httpResHeader :: [(String,String)]
 					, httpResBody :: String
@@ -131,7 +123,6 @@ readRequest handle = do
 mkRequest :: [(String,String)] -> [String] -> Either Integer HTTPRequest
 mkRequest h (m:f:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = v, httpReqHeader = h, httpReqQueries=[]}
 mkRequest h xs = Left 400
---HTTPRequest {httpReqMethod = "FAIL", httpReqFile=[], httpReqVersion=[], httpReqHeader=[], httpReqQueries=[]}
 
 getHeader :: Handle -> IO [(String, String)]
 getHeader h = do
