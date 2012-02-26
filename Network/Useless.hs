@@ -22,7 +22,7 @@ import qualified Data.Map as Map
 import System.FilePath.Posix
 import System.Process
 
-type UselessSite = Useless -> HTTPRequest -> IO HTTPResponse
+type UselessSite = Useless -> HTTPRequest -> IO (Useless, HTTPResponse)
 data Useless = Useless { sites :: Map.Map String UselessSite, stringmap :: Map.Map String String}
 
 
@@ -55,10 +55,11 @@ mainloop :: Socket -> Useless-> IO ()
 mainloop socket useless = do
 	(handle, hostname, portnr) <- accept socket
 	hSetBuffering handle NoBuffering
-	forkIO $ bearbeite handle useless
+--	forkIO $ bearbeite handle useless
+        newuseless <- bearbeite handle useless
 	mainloop socket useless
 
-bearbeite :: Handle -> Useless -> IO ()
+bearbeite :: Handle -> Useless -> IO Useless
 bearbeite handle useless = do
 	eitherHttpRequest <- readRequest handle
 	(site, httpRequest) <- case eitherHttpRequest of
@@ -66,8 +67,9 @@ bearbeite handle useless = do
 	 Right httpRequest -> do
 	  putStrLn $ "Serving File: " ++ httpReqFile httpRequest
           return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) (sites useless), httpRequest)
-        httpResponse <- createResponse httpRequest (site useless)
-        sendResponse handle httpResponse
+        httpResponse <- createResponse httpRequest useless site
+        sendResponse handle $ snd httpResponse
+        return $ fst httpResponse
 
 sendResponse :: Handle -> HTTPResponse -> IO ()
 sendResponse h res = do
@@ -97,12 +99,12 @@ e.g:
 >  	layout <- register "/forbidden" (createErrorResponse 403) layout 
 -}
 createErrorResponse :: Integer -> UselessSite
-createErrorResponse n _ _= do
+createErrorResponse n u _= do
     putStrLn $ "Error: " ++ show n
-    return HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n}
+    return (u,HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n})
 
-createResponse :: HTTPRequest -> (HTTPRequest -> IO HTTPResponse)  -> IO HTTPResponse 
-createResponse request f =  f request
+createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO (Useless, HTTPResponse)
+createResponse request useless f =  f useless request
 
 -- | The HTTP Request
 data HTTPRequest = HTTPRequest  { httpReqMethod 	:: String
