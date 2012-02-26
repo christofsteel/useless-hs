@@ -5,7 +5,9 @@ HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody),
 initUseless,
 register,
 createErrorResponse,
-startServer
+startServer,
+UselessSite,
+Useless (Useless, sites, stringmap)
 ) where
 
 import Network
@@ -20,9 +22,13 @@ import qualified Data.Map as Map
 import System.FilePath.Posix
 import System.Process
 
+type UselessSite = Useless -> HTTPRequest -> IO HTTPResponse
+data Useless = Useless { sites :: Map.Map String UselessSite, stringmap :: Map.Map String String}
+
+
 -- | initUseless initializes a Useless server layout.
-initUseless :: IO (Map.Map String (HTTPRequest -> IO HTTPResponse))
-initUseless = return Map.empty
+initUseless :: IO Useless
+initUseless = return $ Useless {sites = Map.empty, stringmap = Map.empty}
 
 {- |
 'register' adds resources to your a server layout, and returns a new server layout.
@@ -35,32 +41,32 @@ e.g:
 >  	layout <- initUseless
 >  	layout <- register "/test" someFunction layout 
 -}
-register :: String -> (HTTPRequest -> IO HTTPResponse) -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO (Map.Map String (HTTPRequest -> IO HTTPResponse))
-register site f sites = return $ Map.insert site f sites
+register :: String -> UselessSite -> Useless -> IO Useless
+register site f useless = return $ Useless {sites = Map.insert site f (sites useless), stringmap = stringmap useless}
 
 -- | startServer starts the server at a specific Port
-startServer :: Integer -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO ()
-startServer port sites = withSocketsDo $ do
+startServer :: Integer -> Useless -> IO ()
+startServer port useless = withSocketsDo $ do
         putStrLn $ "Starting Server on " ++ show port
 	socket <- listenOn $ PortNumber $ fromIntegral port
-	mainloop socket sites
+	mainloop socket useless
 
-mainloop :: Socket -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO ()
-mainloop socket sites = do
+mainloop :: Socket -> Useless-> IO ()
+mainloop socket useless = do
 	(handle, hostname, portnr) <- accept socket
 	hSetBuffering handle NoBuffering
-	forkIO $ bearbeite handle sites
-	mainloop socket sites
+	forkIO $ bearbeite handle useless
+	mainloop socket useless
 
-bearbeite :: Handle -> Map.Map String (HTTPRequest -> IO HTTPResponse) -> IO ()
-bearbeite handle sites = do
+bearbeite :: Handle -> Useless -> IO ()
+bearbeite handle useless = do
 	eitherHttpRequest <- readRequest handle
 	(site, httpRequest) <- case eitherHttpRequest of
 	 Left i -> return (createErrorResponse i, HTTPRequest {httpReqMethod = "", httpReqVersion = "", httpReqFile = "", httpReqQueries = [], httpReqHeader = []})
 	 Right httpRequest -> do
 	  putStrLn $ "Serving File: " ++ httpReqFile httpRequest
-          return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) sites, httpRequest)
-        httpResponse <- createResponse httpRequest site
+          return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) (sites useless), httpRequest)
+        httpResponse <- createResponse httpRequest (site useless)
         sendResponse handle httpResponse
 
 sendResponse :: Handle -> HTTPResponse -> IO ()
@@ -90,8 +96,8 @@ e.g:
 
 >  	layout <- register "/forbidden" (createErrorResponse 403) layout 
 -}
-createErrorResponse :: Integer -> HTTPRequest -> IO HTTPResponse
-createErrorResponse n _ = do
+createErrorResponse :: Integer -> UselessSite
+createErrorResponse n _ _= do
     putStrLn $ "Error: " ++ show n
     return HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n}
 
