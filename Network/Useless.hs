@@ -10,7 +10,7 @@ addToUseless,
 startServer,
 UselessSite,
 UselessData (UselessData, sites, stringmap),
-getUselessData
+getUselessData,
 requestFromUseless
 ) where
 
