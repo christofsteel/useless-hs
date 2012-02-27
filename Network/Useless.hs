@@ -9,7 +9,8 @@ createErrorResponse,
 addToUseless,
 startServer,
 UselessSite,
-Useless (Useless, sites, stringmap)
+UselessData (UselessData, sites, stringmap),
+getUselessData
 ) where
 
 import Network
@@ -23,19 +24,47 @@ import Data.List
 import qualified Data.Map as Map
 import System.FilePath.Posix
 import System.Process
+import Control.Concurrent.MVar
 
-type UselessSite = Useless -> HTTPRequest -> IO (Useless, HTTPResponse)
-data Useless = Useless { sites :: Map.Map String UselessSite, stringmap :: Map.Map String String}
+{- | 
+'UselessSite' is the type for your Useless functions.
+> testsite :: UselessSite
+> testsite useless request = return $ HTTPResponse {httpResStatus = 200, httpResHeader=[("foo:", "Bar,Baz")], httpResBody="Test123"}
+-}
+type UselessSite = Useless -> HTTPRequest -> IO HTTPResponse
 
+{- |
+'UselessData' consists of the sites, that can be served by your Server and a String Map, that can be used for Shared memory (Future versions will expand this)
+-}
+data UselessData = UselessData { sites :: Map.Map String UselessSite, stringmap :: Map.Map String String}
+{- |
+'Useless' is just a wrapper for 'UselessData', so that it can be used by all threads
+-}
+type Useless = MVar UselessData
+
+{- |
+'createBasicHTTP' creates a very Basic HTTP response from a given String
+-}
 createBasicHTTP :: String -> HTTPResponse
 createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBody=s}
 
-addToUseless :: String -> String -> Useless -> Useless
-addToUseless k s u = Useless {sites = sites u, stringmap = Map.insert k s (stringmap u)}
+{- |
+'addToUseless' adds a Key Value Pair to a shared Useless object
+> testadd :: UselessSite
+> testadd useless request = do
+> 	addToUseless "ThisSite" "Visited"
+>	return $ createBasicHTTP $ .-}
+addToUseless :: String -> String -> Useless -> IO ()
+addToUseless k v useless = do
+	u <- takeMVar useless
+	putMVar useless $ UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
+
+getUselessData :: Useless -> IO UselessData
+getUselessData u = readMVar u
 
 -- | initUseless initializes a Useless server layout.
 initUseless :: IO Useless
-initUseless = return $ Useless {sites = Map.empty, stringmap = Map.empty}
+initUseless = newMVar $ UselessData {sites = Map.empty, stringmap = Map.empty}
 
 {- |
 'register' adds resources to your a server layout, and returns a new server layout.
@@ -48,8 +77,11 @@ e.g:
 >  	layout <- initUseless
 >  	layout <- register "/test" someFunction layout 
 -}
-register :: String -> UselessSite -> Useless -> IO Useless
-register site f useless = return $ Useless {sites = Map.insert site f (sites useless), stringmap = stringmap useless}
+register :: String -> UselessSite -> Useless -> IO ()
+register site f useless = do
+	u <- takeMVar useless
+	putMVar useless $ UselessData {sites = Map.insert site f (sites u), stringmap = stringmap u}
+--	return useless
 
 -- | startServer starts the server at a specific Port
 startServer :: Integer -> Useless -> IO ()
@@ -62,21 +94,21 @@ mainloop :: Socket -> Useless-> IO ()
 mainloop socket useless = do
 	(handle, hostname, portnr) <- accept socket
 	hSetBuffering handle NoBuffering
---	forkIO $ bearbeite handle useless
-        newuseless <- bearbeite handle useless
-	mainloop socket newuseless
+	forkIO $ bearbeite handle useless
+--        newuseless <- bearbeite handle useless
+	mainloop socket useless
 
-bearbeite :: Handle -> Useless -> IO Useless
+bearbeite :: Handle -> Useless -> IO ()
 bearbeite handle useless = do
 	eitherHttpRequest <- readRequest handle
 	(site, httpRequest) <- case eitherHttpRequest of
 	 Left i -> return (createErrorResponse i, HTTPRequest {httpReqMethod = "", httpReqVersion = "", httpReqFile = "", httpReqQueries = [], httpReqHeader = []})
 	 Right httpRequest -> do
 	  putStrLn $ "Serving File: " ++ httpReqFile httpRequest
-          return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) (sites useless), httpRequest)
+	  u <- readMVar useless
+          return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) (sites u), httpRequest)
         httpResponse <- createResponse httpRequest useless site
-        sendResponse handle $ snd httpResponse
-        return $ fst httpResponse
+        sendResponse handle httpResponse
 
 sendResponse :: Handle -> HTTPResponse -> IO ()
 sendResponse h res = do
@@ -108,9 +140,9 @@ e.g:
 createErrorResponse :: Integer -> UselessSite
 createErrorResponse n u _= do
     putStrLn $ "Error: " ++ show n
-    return (u,HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n})
+    return HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n}
 
-createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO (Useless, HTTPResponse)
+createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO HTTPResponse
 createResponse request useless f =  f useless request
 
 -- | The HTTP Request

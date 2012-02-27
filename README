@@ -20,7 +20,7 @@ import Useless
 
 main = do
   theServer <- initUseless
-  theServer <- register "/" (foobar "A String") theServer
+  register "/" (foobar "A String") theServer
   startServer 8080 theServer
 
 foobar :: String -> HTTPRequest -> IO HTTPResponse
