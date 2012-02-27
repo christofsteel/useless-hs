@@ -5,6 +5,7 @@ HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody),
 initUseless,
 register,
 createErrorResponse,
+addToUseless,
 startServer,
 UselessSite,
 Useless (Useless, sites, stringmap)
@@ -25,6 +26,8 @@ import System.Process
 type UselessSite = Useless -> HTTPRequest -> IO (Useless, HTTPResponse)
 data Useless = Useless { sites :: Map.Map String UselessSite, stringmap :: Map.Map String String}
 
+addToUseless :: String -> String -> Useless -> Useless
+addToUseless k s u = Useless {sites = Map.empty, stringmap = Map.insert k s (stringmap u)}
 
 -- | initUseless initializes a Useless server layout.
 initUseless :: IO Useless
