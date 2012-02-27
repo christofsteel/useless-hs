@@ -11,6 +11,7 @@ startServer,
 UselessSite,
 UselessData (UselessData, sites, stringmap),
 getUselessData
+requestFromUseless
 ) where
 
 import Network
