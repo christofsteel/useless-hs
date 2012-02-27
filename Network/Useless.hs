@@ -4,6 +4,7 @@ HTTPRequest (HTTPRequest, httpReqMethod, httpReqVersion, httpReqFile, httpReqHea
 HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody),
 initUseless,
 register,
+createBasicHTTP,
 createErrorResponse,
 addToUseless,
 startServer,
@@ -26,8 +27,11 @@ import System.Process
 type UselessSite = Useless -> HTTPRequest -> IO (Useless, HTTPResponse)
 data Useless = Useless { sites :: Map.Map String UselessSite, stringmap :: Map.Map String String}
 
+createBasicHTTP :: String -> HTTPResponse
+createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBody=s}
+
 addToUseless :: String -> String -> Useless -> Useless
-addToUseless k s u = Useless {sites = Map.empty, stringmap = Map.insert k s (stringmap u)}
+addToUseless k s u = Useless {sites = sites u, stringmap = Map.insert k s (stringmap u)}
 
 -- | initUseless initializes a Useless server layout.
 initUseless :: IO Useless
@@ -60,7 +64,7 @@ mainloop socket useless = do
 	hSetBuffering handle NoBuffering
 --	forkIO $ bearbeite handle useless
         newuseless <- bearbeite handle useless
-	mainloop socket useless
+	mainloop socket newuseless
 
 bearbeite :: Handle -> Useless -> IO Useless
 bearbeite handle useless = do
