@@ -28,8 +28,9 @@ import Control.Concurrent.MVar
 
 {- | 
 'UselessSite' is the type for your Useless functions.
-> testsite :: UselessSite
-> testsite useless request = return $ HTTPResponse {httpResStatus = 200, httpResHeader=[("foo:", "Bar,Baz")], httpResBody="Test123"}
+
+>   testsite :: UselessSite
+>   testsite useless request = return $ HTTPResponse {httpResStatus = 200, httpResHeader=[("foo:", "Bar,Baz")], httpResBody="Test123"}
 -}
 type UselessSite = Useless -> HTTPRequest -> IO HTTPResponse
 
@@ -50,15 +51,40 @@ createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBod
 
 {- |
 'addToUseless' adds a Key Value Pair to a shared Useless object
-> testadd :: UselessSite
-> testadd useless request = do
+
+>   main = do
+>       theServer <- initUseless
+>       register theServer "/" showMe
+>       register theServer "/change" testadd
+>       
+>   showMe :: UselessSite
+>   showMe useless request = do
+>       val <- fromMaybe "" $ requestFromUseless useless "ThisSite"
+>       return $ createBasicHTTP $ val
+>
+>   testadd :: UselessSite
+>   testadd useless request = do
 > 	addToUseless "ThisSite" "Visited"
->	return $ createBasicHTTP $ .-}
-addToUseless :: String -> String -> Useless -> IO ()
-addToUseless k v useless = do
+>	return $ createBasicHTTP $ "Nichts zu sehen".
+-}
+addToUseless :: Useless -> String -> String -> IO ()
+addToUseless useless k v = do
 	u <- takeMVar useless
 	putMVar useless $ UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
 
+{- |
+'requestFromUseless' looksup a String in the shared Memory
+
+see 'addToUseless' for an example.
+-}
+requestFromUseless :: Useless -> String -> IO (Maybe String)
+requestFromUseless useless k = do
+        u <- readMVar useless
+        return $ Map.lookup k $ stringmap u
+
+{- |
+'getUselessData' returns the 'UselessData' associated with a 'Useless' shared memory
+-}
 getUselessData :: Useless -> IO UselessData
 getUselessData u = readMVar u
 
@@ -75,13 +101,12 @@ e.g:
 
 >  server = do 
 >  	layout <- initUseless
->  	layout <- register "/test" someFunction layout 
+>  	register layout "/test" someFunction
 -}
-register :: String -> UselessSite -> Useless -> IO ()
-register site f useless = do
+register :: Useless -> String -> UselessSite -> IO ()
+register useless site f = do
 	u <- takeMVar useless
 	putMVar useless $ UselessData {sites = Map.insert site f (sites u), stringmap = stringmap u}
---	return useless
 
 -- | startServer starts the server at a specific Port
 startServer :: Integer -> Useless -> IO ()
