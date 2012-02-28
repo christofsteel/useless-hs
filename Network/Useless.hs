@@ -1,7 +1,7 @@
 -- | Useless is a Module for building Webapplications
 module Network.Useless (
 HTTPRequest (HTTPRequest, httpReqMethod, httpReqVersion, httpReqFile, httpReqHeader, httpReqQueries),
-HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody),
+HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody, httpResVersion),
 initUseless,
 register,
 createBasicHTTP,
@@ -48,7 +48,17 @@ type Useless = MVar UselessData
 'createBasicHTTP' creates a very Basic HTTP response from a given String
 -}
 createBasicHTTP :: String -> HTTPResponse
-createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBody=s}
+createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=Map.empty, httpResVersion=HTTP11, httpResBody=s}
+
+data HTTPVersion = HTTP10 | HTTP11
+instance Show HTTPVersion where
+	show HTTP10 = "HTTP/1.0"
+	show HTTP11 = "HTTP/1.1"
+-- instance ReadS HTTPVersion where
+readhttp :: String -> HTTPVersion
+readhttp "HTTP/1.0" = HTTP10
+readhttp "HTTP/1.1" = HTTP11
+
 
 {- |
 'addToUseless' adds a Key Value Pair to a shared Useless object
@@ -136,24 +146,24 @@ bearbeite :: Handle -> Useless -> IO ()
 bearbeite handle useless = do
 	eitherHttpRequest <- readRequest handle
 	(site, httpRequest) <- case eitherHttpRequest of
-	 Left i -> return (createErrorResponse i, HTTPRequest {httpReqMethod = "", httpReqVersion = "", httpReqFile = "", httpReqQueries = [], httpReqHeader = []})
+	 Left i -> return (createErrorResponse HTTP11 i, HTTPRequest {httpReqMethod = "", httpReqVersion = HTTP11, httpReqFile = "", httpReqQueries = Map.empty, httpReqHeader = Map.empty})
 	 Right httpRequest -> do
 	  putStrLn $ "Serving File: " ++ httpReqFile httpRequest
 	  u <- readMVar useless
-          return (Map.findWithDefault (createErrorResponse 404) (httpReqFile httpRequest) (sites u), httpRequest)
+          return (Map.findWithDefault (createErrorResponse (httpReqVersion httpRequest) 404) (httpReqFile httpRequest) (sites u), httpRequest)
         httpResponse <- createResponse httpRequest useless site
         sendResponse handle httpResponse
 
 sendResponse :: Handle -> HTTPResponse -> IO ()
 sendResponse h res = do
-    hPutStr h $ createStatusLine $ httpResStatus res
+    hPutStr h $ createStatusLine (httpResVersion res) (httpResStatus res)
     hPutStr h "\n\r"
     hPutStr h $ httpResBody res
     hFlush h
     hClose h
 
-createStatusLine :: Integer -> String
-createStatusLine n = "HTTP/1.0 "++ createStatusLine' n ++"\n\r"
+createStatusLine :: HTTPVersion -> Integer -> String
+createStatusLine v n = (show v) ++ " "++ createStatusLine' n ++"\n\r"
 
 createStatusLine' :: Integer -> String
 createStatusLine' 200 = "200 OK"
@@ -171,25 +181,26 @@ e.g:
 
 >  	register myServer "/forbidden" (createErrorResponse 403)
 -}
-createErrorResponse :: Integer -> UselessSite
-createErrorResponse n u _= do
+createErrorResponse :: HTTPVersion -> Integer -> UselessSite
+createErrorResponse v n u _= do
     putStrLn $ "Error: " ++ show n
-    return HTTPResponse { httpResStatus = n, httpResHeader = [], httpResBody = statushtml n}
+    return HTTPResponse { httpResStatus = n, httpResHeader = Map.empty, httpResVersion=v, httpResBody = statushtml n}
 
 createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO HTTPResponse
 createResponse request useless f =  f useless request
 
 -- | The HTTP Request
 data HTTPRequest = HTTPRequest  { httpReqMethod 	:: String
-				, httpReqVersion 	:: String
+				, httpReqVersion 	:: HTTPVersion
 				, httpReqFile		:: String
-				, httpReqQueries	:: [(String, String)]
-				, httpReqHeader	:: [(String,String)]
+				, httpReqQueries	:: Map.Map String String
+				, httpReqHeader	:: Map.Map String String
 				}
 
 -- | The HTTP Response
 data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
-					, httpResHeader :: [(String,String)]
+					, httpResVersion :: HTTPVersion
+					, httpResHeader :: Map.Map String String
 					, httpResBody :: String
 					}
 
@@ -201,21 +212,21 @@ readRequest handle = do
         header <- getHeader handle
 	return $ mkRequest header $ words requestline
 
-mkRequest :: [(String,String)] -> [String] -> Either Integer HTTPRequest
-mkRequest h (m:f:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = v, httpReqHeader = h, httpReqQueries=[]}
+mkRequest :: Map.Map String String -> [String] -> Either Integer HTTPRequest
+mkRequest h (m:f:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = (readhttp v), httpReqHeader = h, httpReqQueries=Map.empty}
 mkRequest h xs = Left 400
 
-getHeader :: Handle -> IO [(String, String)]
+getHeader :: Handle -> IO (Map.Map String String)
 getHeader h = do
     tryheaderline <- try $ hGetLine h
     case tryheaderline of
-        Left e -> return []
+        Left e -> return Map.empty
         Right headerline  ->             
-            if length headerline == 1 then return []
+            if length headerline == 1 then return Map.empty
              else do
-              let header = mkHeader $ words headerline
+              let (header,value) = mkHeader $ words headerline
               headers <- getHeader h
-              return $ header:headers
+              return $ Map.insert header value headers
 
 mkHeader :: [String] -> (String, String)
 mkHeader (l:r) = (l,unwords r)

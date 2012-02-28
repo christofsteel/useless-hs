@@ -4,14 +4,14 @@ import IO
 
 main = do
     useless <- initUseless
-    register "/test" test useless
-    register "/test2" test useless
-    register "/" list useless
-    register "/show" showMe useless
+    register useless "/test" test
+    register useless "/test2" test
+    register useless "/" list
+    register useless "/show" showMe
     startServer 8080 useless
 
 test :: UselessSite
-test u req = return  HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBody = testbody $ httpReqFile req}
+test u req = return  HTTPResponse{httpResStatus=200, httpResHeader=Map.empty, httpResVersion=(httpReqVersion req),  httpResBody = testbody $ httpReqFile req}
 
 testbody name = "<!DOCTYPE html><html>    <head>        <title>Testdingen</title>    </head>    <body>        <h1>Der Seitenname ist " ++ name ++" </h1>    </body></html>"
 
@@ -21,10 +21,10 @@ showMe useless _ = do
 	return $ createBasicHTTP $ show $ stringmap u
 
 list :: UselessSite
-list useless _ = do
+list useless req = do
 	u <- getUselessData useless
-	addToUseless "Key" "Value" useless
-	return HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBody=
+	addToUseless useless "Key" "Value"
+	return HTTPResponse{httpResStatus=200, httpResHeader=Map.empty, httpResVersion = (httpReqVersion req), httpResBody=
 	"<!DOCTYPE html>\n\r"++
 	"<html>\n\r"++
 	"\t<head>\n\r"++
