@@ -22,6 +22,7 @@ import Control.Concurrent
 import System
 import System.Directory
 import Data.List
+import Data.List.Split
 import qualified Data.Map as Map
 import System.FilePath.Posix
 import System.Process
@@ -213,15 +214,36 @@ readRequest handle = do
 	return $ mkRequest header $ words requestline
 
 mkRequest :: Map.Map String String -> [String] -> Either Integer HTTPRequest
-mkRequest h (m:f:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = (readhttp v), httpReqHeader = h, httpReqQueries=Map.empty}
+mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = (readhttp v), httpReqHeader = h, httpReqQueries=q} where
+	f = fst parsedURI 
+	q = snd parsedURI 
+	parsedURI = parseURI u
+
 mkRequest h xs = Left 400
+
+parseURI :: String -> (String, Map.Map String String)
+parseURI uri = parseQueries $ splitAtFirst '?' uri 
+
+parseQueries :: (String, String) -> (String, Map.Map String String)
+parseQueries (r,q) = (r, Map.fromList $ interpretQueries $ splitOn "&" q)
+
+interpretQueries :: [String] -> [(String, String)]
+interpretQueries [] = []
+interpretQueries (q:qs) = (splitAtFirst '=' q):interpretQueries qs
+
+splitAtFirst :: Eq a => a -> [a] -> ([a],[a])
+splitAtFirst d xs = (before, after) where
+	before = fst $ break (d==) xs
+	after = safetail $ snd $ break (d==) xs where
+		safetail [] = []
+		safetail xs = tail xs
 
 getHeader :: Handle -> IO (Map.Map String String)
 getHeader h = do
     tryheaderline <- try $ hGetLine h
     case tryheaderline of
         Left e -> return Map.empty
-        Right headerline  ->             
+        Right headerline ->
             if length headerline == 1 then return Map.empty
              else do
               let (header,value) = mkHeader $ words headerline

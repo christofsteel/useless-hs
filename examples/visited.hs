@@ -10,7 +10,15 @@ main = do
 showMe :: UselessSite
 showMe useless request = do
        val <- requestFromUseless useless "ThisSite"
-       return $ createBasicHTTP $ fromMaybe "Not Visited" val
+       let liste = [0,3,5,2,5,67,32,192,14312]
+       return $ createBasicHTTP $ (show $ qsort liste) ++ fromMaybe "Not Visited" val
+
+qsort :: Ord a => [a] -> [a]
+qsort []     = []
+qsort (x:xs) = qsort kleinergl ++ [x] ++ qsort groesser
+                   where
+                      kleinergl = [y | y <- xs, y <= x]
+                      groesser  = [y | y <- xs, y > x]
 
 testadd :: UselessSite
 testadd useless request = do
