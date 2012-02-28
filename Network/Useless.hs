@@ -53,20 +53,28 @@ createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=[], httpResBod
 {- |
 'addToUseless' adds a Key Value Pair to a shared Useless object
 
->   main = do
+If the key already has a value, it will be overwritten.
+
+e.g:
+
+>import Network.Useless
+>import Maybe
+>
+>main = do
 >       theServer <- initUseless
 >       register theServer "/" showMe
 >       register theServer "/change" testadd
->       
->   showMe :: UselessSite
->   showMe useless request = do
->       val <- fromMaybe "" $ requestFromUseless useless "ThisSite"
->       return $ createBasicHTTP $ val
+>       startServer 8080 theServer
 >
->   testadd :: UselessSite
->   testadd useless request = do
-> 	addToUseless "ThisSite" "Visited"
->	return $ createBasicHTTP $ "Nichts zu sehen".
+>showMe :: UselessSite
+>showMe useless request = do
+>       val <- requestFromUseless useless "ThisSite"
+>       return $ createBasicHTTP $ fromMaybe "Not Visited" val
+>
+>testadd :: UselessSite
+>testadd useless request = do
+>        addToUseless useless "ThisSite" "Visited"
+>        return $ createBasicHTTP $ "Nichts zu sehen"
 -}
 addToUseless :: Useless -> String -> String -> IO ()
 addToUseless useless k v = do
@@ -74,7 +82,7 @@ addToUseless useless k v = do
 	putMVar useless $ UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
 
 {- |
-'requestFromUseless' looksup a String in the shared Memory
+'requestFromUseless' looksup a String in the shared Memory. If no such Value for the Key is found, "Nothing" is returned.
 
 see 'addToUseless' for an example.
 -}
@@ -89,14 +97,15 @@ requestFromUseless useless k = do
 getUselessData :: Useless -> IO UselessData
 getUselessData u = readMVar u
 
--- | initUseless initializes a Useless server layout.
+-- | initUseless initializes a 'Useless' server layout.
+-- It has to be called befor all 'register' calles
 initUseless :: IO Useless
 initUseless = newMVar $ UselessData {sites = Map.empty, stringmap = Map.empty}
 
 {- |
 'register' adds resources to your a server layout, and returns a new server layout.
 
-The given function is called, when the resource is requested. It gets a 'HTTPRequest' and has to respond with a 'HTTPResponse'
+The given 'UselessSite' function is called, whenever someone requests the resource.
 
 e.g:
 
@@ -121,7 +130,6 @@ mainloop socket useless = do
 	(handle, hostname, portnr) <- accept socket
 	hSetBuffering handle NoBuffering
 	forkIO $ bearbeite handle useless
---        newuseless <- bearbeite handle useless
 	mainloop socket useless
 
 bearbeite :: Handle -> Useless -> IO ()
@@ -157,11 +165,11 @@ createStatusLine' 501 = "501 NOT IMPLEMENTED"
 createStatusLine' _ = "418 I'M A TEAPOT"
 
 {- |
-'createErrorResponse' returns a function, that gets a 'HTTPRequest' and answers with a 'HTTPResponse', for a given HTTP Status code
+'createErrorResponse' returns a 'UselessSite' function , for a given HTTP Status code
 
 e.g:
 
->  	layout <- register "/forbidden" (createErrorResponse 403) layout 
+>  	register myServer "/forbidden" (createErrorResponse 403)
 -}
 createErrorResponse :: Integer -> UselessSite
 createErrorResponse n u _= do
