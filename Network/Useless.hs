@@ -79,7 +79,7 @@ e.g:
 addToUseless :: Useless -> String -> String -> IO ()
 addToUseless useless k v = do
 	u <- takeMVar useless
-	putMVar useless $ UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
+	putMVar useless UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
 
 {- |
 'requestFromUseless' looksup a String in the shared Memory. If no such Value for the Key is found, "Nothing" is returned.
@@ -95,12 +95,12 @@ requestFromUseless useless k = do
 'getUselessData' returns the 'UselessData' associated with a 'Useless' shared memory
 -}
 getUselessData :: Useless -> IO UselessData
-getUselessData u = readMVar u
+getUselessData = readMVar 
 
 -- | initUseless initializes a 'Useless' server layout.
 -- It has to be called befor all 'register' calles
 initUseless :: IO Useless
-initUseless = newMVar $ UselessData {sites = Map.empty, stringmap = Map.empty}
+initUseless = newMVar UselessData {sites = Map.empty, stringmap = Map.empty}
 
 {- |
 'register' adds resources to your a server layout, and returns a new server layout.
@@ -116,7 +116,7 @@ e.g:
 register :: Useless -> String -> UselessSite -> IO ()
 register useless site f = do
 	u <- takeMVar useless
-	putMVar useless $ UselessData {sites = Map.insert site f (sites u), stringmap = stringmap u}
+	putMVar useless UselessData {sites = Map.insert site f (sites u), stringmap = stringmap u}
 
 -- | startServer starts the server at a specific Port
 startServer :: Integer -> Useless -> IO ()
