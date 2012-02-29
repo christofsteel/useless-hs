@@ -15,6 +15,7 @@ requestFromUseless
 ) where
 
 import Network
+import Network.URI
 import System.IO
 import System.IO.Error
 import Control.Exception (bracket, bracket_)
@@ -215,14 +216,14 @@ readRequest handle = do
 
 mkRequest :: Map.Map String String -> [String] -> Either Integer HTTPRequest
 mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = (readhttp v), httpReqHeader = h, httpReqQueries=q} where
-	f = fst parsedURI 
-	q = snd parsedURI 
+	f = uriPath parsedURI 
+	q = uriPath parsedURI 
 	parsedURI = parseURI u
 
 mkRequest h xs = Left 400
 
-parseURI :: String -> (String, Map.Map String String)
-parseURI uri = parseQueries $ splitAtFirst '?' uri 
+parseURI' :: String -> (String, Map.Map String String)
+parseURI' uri = parseQueries $ splitAtFirst '?' uri 
 
 parseQueries :: (String, String) -> (String, Map.Map String String)
 parseQueries (r,q) = (r, Map.fromList $ interpretQueries $ splitOn "&" q)
