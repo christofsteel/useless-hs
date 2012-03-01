@@ -1,6 +1,6 @@
 -- | Useless is a Module for building Webapplications
 module Network.Useless (
-HTTPRequest (HTTPRequest, httpReqMethod, httpReqVersion, httpReqFile, httpReqHeader, httpReqQueries),
+HTTPRequest (HTTPRequest, httpReqMethod, httpReqVersion, httpReqURI, httpReqHeader),
 HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody, httpResVersion),
 initUseless,
 register,
@@ -11,6 +11,7 @@ startServer,
 UselessSite,
 UselessData (UselessData, sites, stringmap),
 getUselessData,
+getQueries,
 requestFromUseless
 ) where
 
@@ -21,6 +22,7 @@ import System.IO.Error
 import Control.Exception (bracket, bracket_)
 import Control.Concurrent
 import System
+import Maybe
 import System.Directory
 import Data.List
 import Data.List.Split
@@ -148,11 +150,11 @@ bearbeite :: Handle -> Useless -> IO ()
 bearbeite handle useless = do
 	eitherHttpRequest <- readRequest handle
 	(site, httpRequest) <- case eitherHttpRequest of
-	 Left i -> return (createErrorResponse HTTP11 i, HTTPRequest {httpReqMethod = "", httpReqVersion = HTTP11, httpReqFile = "", httpReqQueries = Map.empty, httpReqHeader = Map.empty})
+	 Left i -> return (createErrorResponse HTTP11 i, HTTPRequest {httpReqMethod = "", httpReqVersion = HTTP11, httpReqURI = nullURI, httpReqHeader = Map.empty})
 	 Right httpRequest -> do
-	  putStrLn $ "Serving File: " ++ httpReqFile httpRequest
+	  putStrLn $ "Serving File: " ++ (uriPath $ httpReqURI httpRequest)
 	  u <- readMVar useless
-          return (Map.findWithDefault (createErrorResponse (httpReqVersion httpRequest) 404) (httpReqFile httpRequest) (sites u), httpRequest)
+          return (Map.findWithDefault (createErrorResponse (httpReqVersion httpRequest) 404) (uriPath $ httpReqURI httpRequest) (sites u), httpRequest)
         httpResponse <- createResponse httpRequest useless site
         sendResponse handle httpResponse
 
@@ -194,11 +196,15 @@ createResponse request useless f =  f useless request
 -- | The HTTP Request
 data HTTPRequest = HTTPRequest  { httpReqMethod 	:: String
 				, httpReqVersion 	:: HTTPVersion
-				, httpReqFile		:: String
-				, httpReqQueries	:: Map.Map String String
+				, httpReqURI		:: URI
+--				, httpReqQueries	:: Map.Map String String
 				, httpReqHeader	:: Map.Map String String
 				}
 
+getQueries :: HTTPRequest -> Map.Map String String
+getQueries req = do
+	parseQueries $ safetail $ uriQuery $ httpReqURI req
+	
 -- | The HTTP Response
 data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
 					, httpResVersion :: HTTPVersion
@@ -215,18 +221,12 @@ readRequest handle = do
 	return $ mkRequest header $ words requestline
 
 mkRequest :: Map.Map String String -> [String] -> Either Integer HTTPRequest
-mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqFile = f, httpReqVersion = (readhttp v), httpReqHeader = h, httpReqQueries=q} where
-	f = uriPath parsedURI 
-	q = uriPath parsedURI 
-	parsedURI = parseURI u
+mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqURI = fromMaybe nullURI (parseURI u), httpReqVersion = (readhttp v), httpReqHeader = h} where
 
 mkRequest h xs = Left 400
 
-parseURI' :: String -> (String, Map.Map String String)
-parseURI' uri = parseQueries $ splitAtFirst '?' uri 
-
-parseQueries :: (String, String) -> (String, Map.Map String String)
-parseQueries (r,q) = (r, Map.fromList $ interpretQueries $ splitOn "&" q)
+parseQueries :: String -> Map.Map String String
+parseQueries q = Map.fromList $ interpretQueries $ splitOn "&" q
 
 interpretQueries :: [String] -> [(String, String)]
 interpretQueries [] = []
@@ -235,9 +235,10 @@ interpretQueries (q:qs) = (splitAtFirst '=' q):interpretQueries qs
 splitAtFirst :: Eq a => a -> [a] -> ([a],[a])
 splitAtFirst d xs = (before, after) where
 	before = fst $ break (d==) xs
-	after = safetail $ snd $ break (d==) xs where
-		safetail [] = []
-		safetail xs = tail xs
+	after = safetail $ snd $ break (d==) xs
+
+safetail [] = []
+safetail xs = tail xs
 
 getHeader :: Handle -> IO (Map.Map String String)
 getHeader h = do
