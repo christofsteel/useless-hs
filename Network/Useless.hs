@@ -221,7 +221,7 @@ readRequest handle = do
 	return $ mkRequest header $ words requestline
 
 mkRequest :: Map.Map String String -> [String] -> Either Integer HTTPRequest
-mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqURI = fromMaybe nullURI (parseURI u), httpReqVersion = (readhttp v), httpReqHeader = h} where
+mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqURI = fromMaybe nullURI (parseURIReference u), httpReqVersion = (readhttp v), httpReqHeader = h} where
 
 mkRequest h xs = Left 400
 
