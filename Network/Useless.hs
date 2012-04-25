@@ -52,7 +52,7 @@ type Useless = MVar UselessData
 'createBasicHTTP' creates a very Basic HTTP response from a given String
 -}
 createBasicHTTP :: String -> HTTPResponse
-createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=Map.fromList [("Content-Type", "text/html")], httpResVersion=HTTP11, httpResBody=s}
+createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=Map.fromList [("Content-Type", "text/plain")], httpResVersion=HTTP11, httpResBody=s}
 
 data HTTPVersion = HTTP10 | HTTP11
 instance Show HTTPVersion where
@@ -161,10 +161,15 @@ bearbeite handle useless = do
 sendResponse :: Handle -> HTTPResponse -> IO ()
 sendResponse h res = do
     hPutStr h $ createStatusLine (httpResVersion res) (httpResStatus res)
+    hPutStr h $ createResHeader $ httpResHeader res
     hPutStr h "\n\r"
     hPutStr h $ httpResBody res
+    hPutStr h "\n\r"
     hFlush h
     hClose h
+
+createResHeader :: Map.Map String String -> String
+createResHeader headers = Map.foldrWithKey (\key value strings -> key ++ ": " ++ value ++ "\n\r" ++ strings) "" headers
 
 createStatusLine :: HTTPVersion -> Integer -> String
 createStatusLine v n = (show v) ++ " "++ createStatusLine' n ++"\n\r"
