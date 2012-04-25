@@ -17,6 +17,6 @@ source-repository head
 
 
 Library
-    Build-Depends: base, network, process, filepath, containers, directory, haskell98, split
+    Build-Depends: base, network, process, filepath, containers, directory, haskell98, split, mime
     Exposed-modules: Network.Useless
 
