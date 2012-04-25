@@ -1,5 +1,5 @@
 import Network.Useless
-import Maybe
+import Data.Maybe
 
 main = do
        theServer <- initUseless

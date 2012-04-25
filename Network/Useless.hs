@@ -22,6 +22,9 @@ import System.IO.Error
 import Control.Exception (bracket, bracket_)
 import Control.Concurrent
 import System.IO
+import System.Locale
+import Data.Time
+import Data.Time.Format
 import Data.Maybe
 import System.Directory
 import Data.List
@@ -52,7 +55,13 @@ type Useless = MVar UselessData
 'createBasicHTTP' creates a very Basic HTTP response from a given String
 -}
 createBasicHTTP :: String -> HTTPResponse
-createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=Map.fromList [("Content-Type", "text/plain")], httpResVersion=HTTP11, httpResBody=s}
+createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=createBasicResHeader s, httpResVersion=HTTP11, httpResBody=s}
+
+
+createBasicResHeader :: String -> IO (Map.Map String String)
+createBasicResHeader s = do
+	now <- getCurrentTime	
+	return $ Map.fromList [("Content-Type:", "text/html; charset: utf-8"), ("Connection", "close"), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
 
 data HTTPVersion = HTTP10 | HTTP11
 instance Show HTTPVersion where
@@ -161,7 +170,8 @@ bearbeite handle useless = do
 sendResponse :: Handle -> HTTPResponse -> IO ()
 sendResponse h res = do
     hPutStr h $ createStatusLine (httpResVersion res) (httpResStatus res)
-    hPutStr h $ createResHeader $ httpResHeader res
+    header <-  httpResHeader res
+    hPutStr h  $ createResHeader header
     hPutStr h "\n\r"
     hPutStr h $ httpResBody res
     hPutStr h "\n\r"
@@ -193,7 +203,7 @@ e.g:
 createErrorResponse :: HTTPVersion -> Integer -> UselessSite
 createErrorResponse v n u _= do
     putStrLn $ "Error: " ++ show n
-    return HTTPResponse { httpResStatus = n, httpResHeader = Map.empty, httpResVersion=v, httpResBody = statushtml n}
+    return HTTPResponse { httpResStatus = n, httpResHeader = createBasicResHeader $ statushtml n, httpResVersion=v, httpResBody = statushtml n}
 
 createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO HTTPResponse
 createResponse request useless f =  f useless request
@@ -213,7 +223,7 @@ getQueries req = do
 -- | The HTTP Response
 data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
 					, httpResVersion :: HTTPVersion
-					, httpResHeader :: Map.Map String String
+					, httpResHeader :: IO (Map.Map String String)
 					, httpResBody :: String
 					}
 
