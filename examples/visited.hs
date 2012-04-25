@@ -5,7 +5,7 @@ main = do
        theServer <- initUseless
        register theServer "/" showMe
        register theServer "/change" testadd
-       startServer 18080 theServer
+       startServer 18081 theServer
        
 showMe :: UselessSite
 showMe useless request = do

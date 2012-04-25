@@ -61,7 +61,7 @@ createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=createBasicRes
 createBasicResHeader :: String -> IO (Map.Map String String)
 createBasicResHeader s = do
 	now <- getCurrentTime	
-	return $ Map.fromList [("Content-Type:", "text/html; charset: utf-8"), ("Connection", "close"), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
+	return $ Map.fromList [("Content-Type:", "text/html; charset: utf-8"), ("Content-Length", show $ length s), ("Connection", "close"), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
 
 data HTTPVersion = HTTP10 | HTTP11
 instance Show HTTPVersion where
@@ -172,17 +172,17 @@ sendResponse h res = do
     hPutStr h $ createStatusLine (httpResVersion res) (httpResStatus res)
     header <-  httpResHeader res
     hPutStr h  $ createResHeader header
-    hPutStr h "\n\r"
+    hPutStr h "\r\n"
     hPutStr h $ httpResBody res
-    hPutStr h "\n\r"
+    hPutStr h "\r\n"
     hFlush h
     hClose h
 
 createResHeader :: Map.Map String String -> String
-createResHeader headers = Map.foldrWithKey (\key value strings -> key ++ ": " ++ value ++ "\n\r" ++ strings) "" headers
+createResHeader headers = Map.foldrWithKey (\key value strings -> key ++ ": " ++ value ++ "\r\n" ++ strings) "" headers
 
 createStatusLine :: HTTPVersion -> Integer -> String
-createStatusLine v n = (show v) ++ " "++ createStatusLine' n ++"\n\r"
+createStatusLine v n = (show v) ++ " "++ createStatusLine' n ++"\r\n"
 
 createStatusLine' :: Integer -> String
 createStatusLine' 200 = "200 OK"
@@ -227,7 +227,7 @@ data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
 					, httpResBody :: String
 					}
 
-statushtml n = "<!DOCTYPE html>\n\r<html>\n\r\t<head>\n\r\t\t<title>"++ createStatusLine' n ++"</title>\n\r\t</head>\n\r\t<body>\n\r\t\t<img alt=\"" ++ createStatusLine' n++ "\" src=\"http://httpcats.herokuapp.com/" ++ show n ++ "\"/>\n\r\t</body>\n\r</html>"
+statushtml n = "<!DOCTYPE html>\r\n<html>\r\n\t<head>\r\n\t\t<title>"++ createStatusLine' n ++"</title>\r\n\t</head>\r\n\t<body>\r\n\t\t<img alt=\"" ++ createStatusLine' n++ "\" src=\"http://httpcats.herokuapp.com/" ++ show n ++ "\"/>\r\n\t</body>\r\n</html>"
 
 readRequest :: Handle -> IO (Either Integer HTTPRequest)
 readRequest handle = do
