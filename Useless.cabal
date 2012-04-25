@@ -1,5 +1,5 @@
 Name: Useless
-Version: 0.2.2
+Version: 0.2.3
 Cabal-version: >= 1.6
 License: OtherLicense
 License-File: LICENSE
@@ -17,6 +17,6 @@ source-repository head
 
 
 Library
-    Build-Depends: base, network, process, filepath, containers, directory, haskell98, split, mime
+    Build-Depends: base, network, process, filepath, containers, directory, split
     Exposed-modules: Network.Useless
 

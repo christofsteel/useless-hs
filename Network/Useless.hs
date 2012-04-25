@@ -21,8 +21,8 @@ import System.IO
 import System.IO.Error
 import Control.Exception (bracket, bracket_)
 import Control.Concurrent
-import System
-import Maybe
+import System.IO
+import Data.Maybe
 import System.Directory
 import Data.List
 import Data.List.Split
@@ -52,7 +52,7 @@ type Useless = MVar UselessData
 'createBasicHTTP' creates a very Basic HTTP response from a given String
 -}
 createBasicHTTP :: String -> HTTPResponse
-createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=Map.empty, httpResVersion=HTTP11, httpResBody=s}
+createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=Map.fromList [("Content-Type", "text/html")], httpResVersion=HTTP11, httpResBody=s}
 
 data HTTPVersion = HTTP10 | HTTP11
 instance Show HTTPVersion where
