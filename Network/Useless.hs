@@ -2,6 +2,7 @@
 module Network.Useless (
 HTTPRequest (HTTPRequest, httpReqMethod, httpReqVersion, httpReqURI, httpReqHeader),
 HTTPResponse (HTTPResponse, httpResStatus, httpResHeader, httpResBody, httpResVersion),
+uselessFile,
 initUseless,
 register,
 createBasicHTTP,
@@ -55,13 +56,26 @@ type Useless = MVar UselessData
 'createBasicHTTP' creates a very Basic HTTP response from a given String
 -}
 createBasicHTTP :: String -> HTTPResponse
-createBasicHTTP s = HTTPResponse{httpResStatus=200, httpResHeader=createBasicResHeader s, httpResVersion=HTTP11, httpResBody=s}
+createBasicHTTP s = createMimeHTTP "text/plain" s
 
+-- HTTPResponse{httpResStatus=200, httpResHeader=createBasicResHeader s, httpResVersion=HTTP11, httpResBody=s}
 
-createBasicResHeader :: String -> IO (Map.Map String String)
-createBasicResHeader s = do
+createMimeHTTP :: String -> String -> HTTPResponse
+createMimeHTTP mime s = HTTPResponse{httpResStatus=200, httpResHeader=createMimeResHeader mime s, httpResVersion=HTTP11, httpResBody=s}
+
+htmlHTTPRes = createMimeHTTP "text/html; charset: utf-8"
+cssHTTPRes = createMimeHTTP "text/css; charset: utf-8"
+
+createMimeResHeader :: String -> String -> IO (Map.Map String String)
+createMimeResHeader mime s = do
 	now <- getCurrentTime	
-	return $ Map.fromList [("Content-Type:", "text/html; charset: utf-8"), ("Content-Length", show $ length s), ("Connection", "close"), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
+	return $ Map.fromList $ standardResHeader ++  [("Content-Type",mime), ("Content-Length", show $ length s), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
+
+standardResHeader :: [(String, String)]
+standardResHeader = [
+    ("Connection", "close") ,
+    ("Server", "Useless-hs Webserver") 
+    ]
 
 data HTTPVersion = HTTP10 | HTTP11
 instance Show HTTPVersion where
@@ -203,7 +217,7 @@ e.g:
 createErrorResponse :: HTTPVersion -> Integer -> UselessSite
 createErrorResponse v n u _= do
     putStrLn $ "Error: " ++ show n
-    return HTTPResponse { httpResStatus = n, httpResHeader = createBasicResHeader $ statushtml n, httpResVersion=v, httpResBody = statushtml n}
+    return HTTPResponse { httpResStatus = n, httpResHeader = createMimeResHeader "text/html" $ statushtml n, httpResVersion=v, httpResBody = statushtml n}
 
 createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO HTTPResponse
 createResponse request useless f =  f useless request
@@ -270,3 +284,9 @@ getHeader h = do
 mkHeader :: [String] -> (String, String)
 mkHeader (l:r) = (l,unwords r)
 mkHeader _ = ("","")
+
+uselessFile :: String -> String -> UselessSite
+uselessFile mime file useless req = do
+    content <- readFile  $ file
+    return $ createMimeHTTP mime $ content
+
