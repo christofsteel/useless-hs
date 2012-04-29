@@ -11,5 +11,6 @@ foobar s useless req = return HTTPResponse
   { httpResStatus = 200
   , httpResVersion = httpReqVersion req
   , httpResHeader = Map.fromList [("Content-Type", "text/html"), ("Transfer-Encoding", "identity")]
-  , httpResBody = "<!DOCTYPE html><html><head><title>"++ s ++"</title></head><body>You are using "++ (show $ httpReqVersion req) ++", but I'm ignoring that, sorry :(</body></html>"
+  , httpResBody = "<!DOCTYPE html><html><head><title>"++ s ++"</title></head><body>You are using "++ show (httpReqVersion req) ++
+  ", but I'm ignoring that, sorry :(</body></html>"
   }

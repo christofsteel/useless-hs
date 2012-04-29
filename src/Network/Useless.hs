@@ -18,7 +18,6 @@ requestFromUseless
 
 import Network
 import Network.URI
-import System.IO
 import System.IO.Error
 import Control.Exception (bracket, bracket_)
 import Control.Concurrent
@@ -56,7 +55,7 @@ type Useless = MVar UselessData
 'createBasicHTTP' creates a very Basic HTTP response from a given String
 -}
 createBasicHTTP :: String -> HTTPResponse
-createBasicHTTP s = createMimeHTTP "text/plain" s
+createBasicHTTP = createMimeHTTP "text/plain"
 
 -- HTTPResponse{httpResStatus=200, httpResHeader=createBasicResHeader s, httpResVersion=HTTP11, httpResBody=s}
 
@@ -68,8 +67,8 @@ cssHTTPRes = createMimeHTTP "text/css; charset: utf-8"
 
 createMimeResHeader :: String -> String -> IO (Map.Map String String)
 createMimeResHeader mime s = do
-	now <- getCurrentTime	
-	return $ Map.fromList $ standardResHeader ++  [("Content-Type",mime), ("Content-Length", show $ length s), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
+        now <- getCurrentTime        
+        return $ Map.fromList $ standardResHeader ++  [("Content-Type",mime), ("Content-Length", show $ length s), ("Date", formatTime defaultTimeLocale rfc822DateFormat now)]
 
 standardResHeader :: [(String, String)]
 standardResHeader = [
@@ -79,8 +78,8 @@ standardResHeader = [
 
 data HTTPVersion = HTTP10 | HTTP11
 instance Show HTTPVersion where
-	show HTTP10 = "HTTP/1.0"
-	show HTTP11 = "HTTP/1.1"
+        show HTTP10 = "HTTP/1.0"
+        show HTTP11 = "HTTP/1.1"
 -- instance ReadS HTTPVersion where
 readhttp :: String -> HTTPVersion
 readhttp "HTTP/1.0" = HTTP10
@@ -115,8 +114,8 @@ e.g:
 -}
 addToUseless :: Useless -> String -> String -> IO ()
 addToUseless useless k v = do
-	u <- takeMVar useless
-	putMVar useless UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
+        u <- takeMVar useless
+        putMVar useless UselessData {sites = sites u, stringmap = Map.insert k v (stringmap u)}
 
 {- |
 'requestFromUseless' looksup a String in the shared Memory. If no such Value for the Key is found, "Nothing" is returned.
@@ -147,36 +146,36 @@ The given 'UselessSite' function is called, whenever someone requests the resour
 e.g:
 
 >  server = do 
->  	layout <- initUseless
->  	register layout "/test" someFunction
+>          layout <- initUseless
+>          register layout "/test" someFunction
 -}
 register :: Useless -> String -> UselessSite -> IO ()
 register useless site f = do
-	u <- takeMVar useless
-	putMVar useless UselessData {sites = Map.insert site f (sites u), stringmap = stringmap u}
+        u <- takeMVar useless
+        putMVar useless UselessData {sites = Map.insert site f (sites u), stringmap = stringmap u}
 
 -- | startServer starts the server at a specific Port
 startServer :: Integer -> Useless -> IO ()
 startServer port useless = withSocketsDo $ do
         putStrLn $ "Starting Server on " ++ show port
-	socket <- listenOn $ PortNumber $ fromIntegral port
-	mainloop socket useless
+        socket <- listenOn $ PortNumber $ fromIntegral port
+        mainloop socket useless
 
 mainloop :: Socket -> Useless-> IO ()
 mainloop socket useless = do
-	(handle, hostname, portnr) <- accept socket
-	hSetBuffering handle NoBuffering
-	forkIO $ bearbeite handle useless
-	mainloop socket useless
+        (handle, hostname, portnr) <- accept socket
+        hSetBuffering handle NoBuffering
+        forkIO $ bearbeite handle useless
+        mainloop socket useless
 
 bearbeite :: Handle -> Useless -> IO ()
 bearbeite handle useless = do
-	eitherHttpRequest <- readRequest handle
-	(site, httpRequest) <- case eitherHttpRequest of
-	 Left i -> return (createErrorResponse HTTP11 i, HTTPRequest {httpReqMethod = "", httpReqVersion = HTTP11, httpReqURI = nullURI, httpReqHeader = Map.empty})
-	 Right httpRequest -> do
-	  putStrLn $ "Serving File: " ++ (uriPath $ httpReqURI httpRequest)
-	  u <- readMVar useless
+        eitherHttpRequest <- readRequest handle
+        (site, httpRequest) <- case eitherHttpRequest of
+         Left i -> return (createErrorResponse HTTP11 i, HTTPRequest {httpReqMethod = "", httpReqVersion = HTTP11, httpReqURI = nullURI, httpReqHeader = Map.empty})
+         Right httpRequest -> do
+          putStrLn $ "Serving File: " ++ uriPath (httpReqURI httpRequest)
+          u <- readMVar useless
           return (Map.findWithDefault (createErrorResponse (httpReqVersion httpRequest) 404) (uriPath $ httpReqURI httpRequest) (sites u), httpRequest)
         httpResponse <- createResponse httpRequest useless site
         sendResponse handle httpResponse
@@ -193,10 +192,10 @@ sendResponse h res = do
     hClose h
 
 createResHeader :: Map.Map String String -> String
-createResHeader headers = Map.foldrWithKey (\key value strings -> key ++ ": " ++ value ++ "\r\n" ++ strings) "" headers
+createResHeader = Map.foldrWithKey (\key value strings -> key ++ ": " ++ value ++ "\r\n" ++ strings) ""
 
 createStatusLine :: HTTPVersion -> Integer -> String
-createStatusLine v n = (show v) ++ " "++ createStatusLine' n ++"\r\n"
+createStatusLine v n = show v ++ " "++ createStatusLine' n ++"\r\n"
 
 createStatusLine' :: Integer -> String
 createStatusLine' 200 = "200 OK"
@@ -212,7 +211,7 @@ createStatusLine' _ = "418 I'M A TEAPOT"
 
 e.g:
 
->  	register myServer "/forbidden" (createErrorResponse 403)
+>          register myServer "/forbidden" (createErrorResponse 403)
 -}
 createErrorResponse :: HTTPVersion -> Integer -> UselessSite
 createErrorResponse v n u _= do
@@ -223,34 +222,35 @@ createResponse :: HTTPRequest -> Useless -> UselessSite  -> IO HTTPResponse
 createResponse request useless f =  f useless request
 
 -- | The HTTP Request
-data HTTPRequest = HTTPRequest  { httpReqMethod 	:: String
-				, httpReqVersion 	:: HTTPVersion
-				, httpReqURI		:: URI
---				, httpReqQueries	:: Map.Map String String
-				, httpReqHeader	:: Map.Map String String
-				}
+data HTTPRequest = HTTPRequest  { httpReqMethod         :: String
+                                , httpReqVersion         :: HTTPVersion
+                                , httpReqURI                :: URI
+--                                , httpReqQueries        :: Map.Map String String
+                                , httpReqHeader        :: Map.Map String String
+                                }
 
 getQueries :: HTTPRequest -> Map.Map String String
-getQueries req = do
-	parseQueries $ safetail $ uriQuery $ httpReqURI req
-	
+getQueries req = parseQueries $ safetail $ uriQuery $ httpReqURI req
+        
 -- | The HTTP Response
-data HTTPResponse = HTTPResponse	{ httpResStatus	:: Integer
-					, httpResVersion :: HTTPVersion
-					, httpResHeader :: IO (Map.Map String String)
-					, httpResBody :: String
-					}
+data HTTPResponse = HTTPResponse        { httpResStatus        :: Integer
+                                        , httpResVersion :: HTTPVersion
+                                        , httpResHeader :: IO (Map.Map String String)
+                                        , httpResBody :: String
+                                        }
 
 statushtml n = "<!DOCTYPE html>\r\n<html>\r\n\t<head>\r\n\t\t<title>"++ createStatusLine' n ++"</title>\r\n\t</head>\r\n\t<body>\r\n\t\t<img alt=\"" ++ createStatusLine' n++ "\" src=\"http://httpcats.herokuapp.com/" ++ show n ++ "\"/>\r\n\t</body>\r\n</html>"
 
 readRequest :: Handle -> IO (Either Integer HTTPRequest)
 readRequest handle = do
-	requestline <- hGetLine handle
+        requestline <- hGetLine handle
         header <- getHeader handle
-	return $ mkRequest header $ words requestline
+        return $ mkRequest header $ words requestline
 
 mkRequest :: Map.Map String String -> [String] -> Either Integer HTTPRequest
-mkRequest h (m:u:v:xs) = Right HTTPRequest {httpReqMethod = m, httpReqURI = fromMaybe nullURI (parseURIReference u), httpReqVersion = (readhttp v), httpReqHeader = h} where
+mkRequest h (m:u:v:xs) = Right HTTPRequest{httpReqMethod = m,
+            httpReqURI = fromMaybe nullURI (parseURIReference u),
+            httpReqVersion = readhttp v, httpReqHeader = h}
 
 mkRequest h xs = Left 400
 
@@ -258,13 +258,12 @@ parseQueries :: String -> Map.Map String String
 parseQueries q = Map.fromList $ interpretQueries $ splitOn "&" q
 
 interpretQueries :: [String] -> [(String, String)]
-interpretQueries [] = []
-interpretQueries (q:qs) = (splitAtFirst '=' q):interpretQueries qs
+interpretQueries = map (splitAtFirst '=')
 
 splitAtFirst :: Eq a => a -> [a] -> ([a],[a])
 splitAtFirst d xs = (before, after) where
-	before = fst $ break (d==) xs
-	after = safetail $ snd $ break (d==) xs
+        before = fst $ break (d==) xs
+        after = safetail $ snd $ break (d==) xs
 
 safetail [] = []
 safetail xs = tail xs
@@ -287,6 +286,6 @@ mkHeader _ = ("","")
 
 uselessFile :: String -> String -> UselessSite
 uselessFile mime file useless req = do
-    content <- readFile  $ file
-    return $ createMimeHTTP mime $ content
+    content <- readFile file
+    return $ createMimeHTTP mime content
 

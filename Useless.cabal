@@ -17,6 +17,16 @@ source-repository head
 
 
 Library
-    Build-Depends: base, network, process, filepath, containers, directory, split, time, old-locale
+    hs-source-dirs:  src
+    Build-Depends: 
+                   base,
+                   network,
+                   process,
+                   filepath,
+                   containers,
+                   directory,
+                   split,
+                   time,
+                   old-locale
     Exposed-modules: Network.Useless
 
