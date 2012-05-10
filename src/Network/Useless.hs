@@ -18,8 +18,8 @@ requestFromUseless
 
 import Network
 import Network.URI
-import System.IO.Error
-import Control.Exception (bracket, bracket_)
+--import System.IO.Error
+import Control.Exception (bracket, bracket_, try, SomeException)
 import Control.Concurrent
 import System.IO
 import System.Locale
@@ -270,7 +270,7 @@ safetail xs = tail xs
 
 getHeader :: Handle -> IO (Map.Map String String)
 getHeader h = do
-    tryheaderline <- try $ hGetLine h
+    tryheaderline <- (try :: IO String -> IO(Either SomeException String)) $ hGetLine h
     case tryheaderline of
         Left e -> return Map.empty
         Right headerline ->
